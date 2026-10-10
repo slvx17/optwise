@@ -1,0 +1,9 @@
+[project]
+name = "optwise"
+version = "0.0.1"
+description = "OPT / STEM OPT planner with cited sources and deterministic deadlines"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
