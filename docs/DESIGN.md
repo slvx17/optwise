@@ -20,6 +20,18 @@
 6. **Eval before UI.**
    Gold set and engine tests come first. CI fails on regression. Keep a held-out split so prompts are not overfit to the eval.
 
+   Gold set: `evals/gold.jsonl` (60 examples, every third held out as `test`), written synthetically from paraphrased real phrasing (forums, school FAQs; no usernames, no copied posts), deliberately messy: typos, vague dates, false premises, multi-part, adversarial. Labels name the expected route, rule ids, inputs and what must be asked; expected dates are not stored, the engine computes them, and a test cross-checks hand labels against the engine. Each metric runs per example, belongs to one stage, and has a release gate:
+
+   | Stage | Metric | Gate |
+   |---|---|---|
+   | Router | out-of-scope recall / false-refusal rate | >= 95% / <= 5% |
+   | Router | expected rule ids retrieved | >= 90% |
+   | Extraction | input dates correct | >= 95% |
+   | Narration | dates in answer equal engine output | 100% |
+   | Narration | contested condition mentioned / contested value stated as law | 100% / 0 |
+   | Narration | cited quote exists in its source | 100% |
+   | Narration | asks for a missing input instead of inventing it | 100% |
+
 7. **Corpus freshness has a human gate.**
    Watch two signals: the eCFR versions API for 8 CFR 214.2 (structured, and the cheapest way to see an amendment) and SEVP announcements (where status changes such as injunctions show up). A change in either opens a review (diff report plus a proposed rule edit). It never writes a rule. Until reviewed, rules are unchanged and the UI shows a staleness notice.
 
