@@ -32,6 +32,8 @@
    | Narration | cited quote exists in its source | 100% |
    | Narration | asks for a missing input instead of inventing it | 100% |
 
+   **No LLM judge (for now).** The narrator returns structured output (dates, cited rule ids, quotes, contested note, asked-for inputs, then free `text`), so every metric above is checked in code: free, exact and repeatable at the budget of $0.10 or less per run. Schema compliance is itself a metric (malformed output = fail). Wording quality (no advice tone, readable) is reviewed by a human on a fixed sample per release, against a short rubric, with verdicts recorded so it is a tracked number rather than an impression. A disclaimer labels advice-like wording but does not excuse it. Add an LLM judge only when review volume outgrows one person, and validate it against the human verdicts first.
+
 7. **Corpus freshness has a human gate.**
    Watch two signals: the eCFR versions API for 8 CFR 214.2 (structured, and the cheapest way to see an amendment) and SEVP announcements (where status changes such as injunctions show up). A change in either opens a review (diff report plus a proposed rule edit). It never writes a rule. Until reviewed, rules are unchanged and the UI shows a staleness notice.
 
