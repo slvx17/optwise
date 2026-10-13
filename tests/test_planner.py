@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
@@ -35,3 +36,18 @@ def test_unloaded_rule_fails_loudly():
 
 def test_shipped_rules_file_loads():
     load_rules(Path(__file__).parents[1] / "data" / "rules.toml")
+
+
+def test_value_must_appear_in_quote(tmp_path):
+    bad = tmp_path / "rules.toml"
+    bad.write_text('[[rule]]\nid = "x"\ndescription = "d"\nvalue = 9\nunit = "days"\n'
+                   'quote = "up to 90 days prior"\nsource_url = "u"\nverified_on = 2026-01-01\n')
+    with pytest.raises(ValueError, match="not found in quote"):
+        load_rules(bad)
+
+
+def test_planner_rejects_unit_mismatch():
+    rules = load_rules(FIXTURE)
+    rules["opt_file_before_end"] = replace(rules["opt_file_before_end"], unit="months")
+    with pytest.raises(ValueError, match="expects 'days'"):
+        backward_plan(date(2027, 5, 15), rules)

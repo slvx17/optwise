@@ -1,4 +1,4 @@
-# Rules are data. Every rule needs a quote-backed official source and a verification date.
+# Rules are data. Every rule needs an exact quote (containing its value) from an official source and a verification date.
 # This file is intentionally empty until each rule is verified from an official source.
 #
 # [[rule]]
@@ -6,5 +6,6 @@
 # description = "Earliest day before program end date an OPT application may be filed"
 # value = 0
 # unit = "days"
+# quote = "exact source text containing the value"
 # source_url = "https://..."
 # verified_on = 2026-01-01

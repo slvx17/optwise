@@ -5,6 +5,7 @@ id = "opt_file_before_end"
 description = "fixture"
 value = 90
 unit = "days"
+quote = "fixture: up to 90 days before"
 source_url = "https://example.test/before"
 verified_on = 2026-01-01
 
@@ -13,5 +14,6 @@ id = "opt_file_after_end"
 description = "fixture"
 value = 60
 unit = "days"
+quote = "fixture: up to 60 days after"
 source_url = "https://example.test/after"
 verified_on = 2026-01-01
