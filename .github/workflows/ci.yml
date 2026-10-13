@@ -10,3 +10,4 @@ jobs:
           python-version: "3.12"
       - run: pip install pytest
       - run: python -m pytest
+      - run: python evals/run.py dev

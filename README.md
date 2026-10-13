@@ -42,15 +42,19 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 ## Roadmap
 
 - [x] Rule schema, loader and backward planner with tests
-- [ ] Verify rules from official sources (each needs a quote and `verified_on`)
-- [ ] Gold eval set and metrics (citation correctness, refusal precision/recall)
-- [ ] Retrieval over official sources (keyword first, measured)
-- [ ] Router, validators and the LLM narrator (open models via OpenRouter)
-- [ ] Web demo with rate limits and a spend ceiling
-- [ ] Corpus refresh job with a human review gate
+- [x] Verify rules from official sources (5 rules from 8 CFR 214.2(f), pinned; contested 30-day limit recorded)
+- [x] Gold eval set, per-stage metrics and release gates (`python evals/run.py`)
+- [x] Keyword router (route + rule ids), measured against the gates
+- [ ] Input extraction (dates from the question), measured
+- [ ] LLM narrator with structured output, validators and retry (open models via OpenRouter)
+- [ ] CLI demo: question in, cited plan out
+- [ ] Freshness check: alert when eCFR publishes a new version of 8 CFR 214.2
+- [ ] Results write-up: metrics per stage, cost per run, what failed
+- Later: retrieval over full source pages for policy questions, web demo with rate limits and a spend ceiling
 
 ## Development
 
 ```bash
 python -m pytest
+python evals/run.py        # dev split; `test` is held out, run it rarely
 ```
