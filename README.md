@@ -47,10 +47,11 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 - [x] Keyword router (route + rule ids), measured against the gates
 - [ ] Input extraction (dates from the question), measured
 - [ ] LLM narrator with structured output, validators and retry (open models via OpenRouter)
-- [ ] CLI demo: question in, cited plan out
-- [ ] Freshness check: alert when eCFR publishes a new version of 8 CFR 214.2
+- [ ] Retrieval over pinned 8 CFR 214.2(f) paragraphs for policy questions (keyword first, recall@k on the gold set)
+- [ ] Web app: plan screen (fact vs condition, editable missing inputs) and ask box
+- [ ] Public demo guards: per-IP rate limit, input cap, max output tokens, daily spend ceiling, key server-side
+- [ ] Deploy (free tier) and freshness check for new eCFR versions
 - [ ] Results write-up: metrics per stage, cost per run, what failed
-- Later: retrieval over full source pages for policy questions, web demo with rate limits and a spend ceiling
 
 ## Development
 
