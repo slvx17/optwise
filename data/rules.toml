@@ -1,11 +1,56 @@
-# Rules are data. Every rule needs an exact quote (containing its value) from an official source and a verification date.
-# This file is intentionally empty until each rule is verified from an official source.
-#
-# [[rule]]
-# id = "opt_file_before_end"
-# description = "Earliest day before program end date an OPT application may be filed"
-# value = 0
-# unit = "days"
-# quote = "exact source text containing the value"
-# source_url = "https://..."
-# verified_on = 2026-01-01
+# Rules are data. Every rule needs an exact quote (containing its value) from 8 CFR 214.2(f),
+# a point-in-time eCFR link (/on/<date>/, never /current/) and a verification date.
+# A codified value that is not in force goes in [rule.contested] with why (status, status_url).
+# Not legal advice. See docs/DESIGN.md #2.
+
+[[rule]]
+id = "opt_file_before_end"
+description = "Post-completion OPT: earliest filing, days before program end date (8 CFR 214.2(f)(11)(i)(B)(2))"
+value = 90
+unit = "days"
+quote = "the student may properly file his or her Form I-765 or successor form up to 90 days prior to his or her program end date and no later than 60 days after his or her program end date."
+source_url = "https://www.ecfr.gov/on/2026-09-14/title-8/section-214.2"
+verified_on = 2026-10-12
+
+[[rule]]
+id = "opt_file_after_end"
+description = "Post-completion OPT: latest filing, days after program end date (8 CFR 214.2(f)(11)(i)(B)(2))"
+value = 60
+unit = "days"
+quote = "the student may properly file his or her Form I-765 or successor form up to 90 days prior to his or her program end date and no later than 60 days after his or her program end date."
+source_url = "https://www.ecfr.gov/on/2026-09-14/title-8/section-214.2"
+verified_on = 2026-10-12
+
+[rule.contested]
+value = 30
+quote = "the student may properly file his or her Form I-765 or successor form up to 90 days prior to his or her program end date and no later than 30 days after his or her program end date."
+source_url = "https://www.ecfr.gov/on/2026-10-01/title-8/section-214.2"
+status = "Codified 2026-09-15 by the Duration of Status final rule (91 FR, FR Doc. 2026-14439), but its effective date was postponed by a nationwide preliminary order on 2026-09-14 in Presidents' Alliance v. DHS, No. 1:26-cv-13799 (D. Mass.). Preliminary; may be lifted on appeal."
+status_url = "https://www.presidentsalliance.org/duration-of-status-litigation/"
+
+[[rule]]
+id = "opt_file_after_dso_recommendation"
+description = "Post-completion OPT: latest filing, days after the DSO enters the OPT recommendation in SEVIS (8 CFR 214.2(f)(11)(i)(B)(2))"
+value = 30
+unit = "days"
+quote = "The student must also file his or her Form I-765 or successor form with USCIS within 30 days of the date the DSO enters the recommendation for OPT into his or her SEVIS record."
+source_url = "https://www.ecfr.gov/on/2026-09-14/title-8/section-214.2"
+verified_on = 2026-10-12
+
+[[rule]]
+id = "stem_file_before_ead_expiry"
+description = "STEM OPT extension: earliest filing, days before the current OPT EAD expires (8 CFR 214.2(f)(11)(i)(C))"
+value = 90
+unit = "days"
+quote = "may request an extension of employment authorization by filing Form I-765 or successor form, with the required fee and supporting documents, up to 90 days prior to the expiration date of the student's current OPT employment authorization."
+source_url = "https://www.ecfr.gov/on/2026-09-14/title-8/section-214.2"
+verified_on = 2026-10-12
+
+[[rule]]
+id = "stem_unemployment_cap"
+description = "Max aggregate unemployment days across post-completion OPT plus the STEM extension (8 CFR 214.2(f)(10)(ii)(E))"
+value = 150
+unit = "days"
+quote = "Students granted a 24-month OPT extension under paragraph (f)(10)(ii)(C)(2) of this section may not accrue an aggregate of more than 150 days of unemployment during a total OPT period"
+source_url = "https://www.ecfr.gov/on/2026-09-14/title-8/section-214.2"
+verified_on = 2026-10-12

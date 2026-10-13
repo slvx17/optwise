@@ -28,3 +28,6 @@
 
 9. **A public demo is a cost surface.**
    Per-IP rate limit, input length cap, max output tokens, a global daily spend ceiling, and the API key server-side only.
+
+10. **Facts and conditions are shown apart; uncertainty is never guessed away.**
+    A plan shows the legal limit in force first. A contested rule (`[rule.contested]`) adds a second, labelled line ("conservative target: day 30, the limit if the injunction is lifted"), stating the condition rather than advising. Every date, including the conservative one, is computed in code; the LLM only phrases it. A missing input (e.g. the DSO recommendation date) is reported in `open_inputs` and shown as a relative rule ("within 30 days of your DSO's recommendation"), never filled with a guess; a what-if editor may offer a default only if it is the earliest plausible date and labelled as an assumption. Since we store nothing, change reaches returning users by pull: each rule shows when it last changed. Assumption to test: students learn of rule changes from school broadcasts and come back. If returns are low, add an `.ics` export with a recheck reminder (still stateless) before anything that stores contact details.

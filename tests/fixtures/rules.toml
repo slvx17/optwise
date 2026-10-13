@@ -17,3 +17,19 @@ unit = "days"
 quote = "fixture: up to 60 days after"
 source_url = "https://example.test/after"
 verified_on = 2026-01-01
+
+[rule.contested]
+value = 30
+quote = "fixture: up to 30 days after"
+source_url = "https://example.test/after-contested"
+status = "fixture: blocked"
+status_url = "https://example.test/status"
+
+[[rule]]
+id = "opt_file_after_dso_recommendation"
+description = "fixture"
+value = 30
+unit = "days"
+quote = "fixture: within 30 days of recommendation"
+source_url = "https://example.test/dso"
+verified_on = 2026-01-01

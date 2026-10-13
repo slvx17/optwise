@@ -14,7 +14,9 @@ def test_window_and_citations():
     (step,) = backward_plan(date(2027, 5, 15), load_rules(FIXTURE))
     assert step.earliest == date(2027, 2, 14)
     assert step.latest == date(2027, 7, 14)
-    assert step.cites == ("opt_file_before_end", "opt_file_after_end")
+    assert step.cites == ("opt_file_before_end", "opt_file_after_end", "opt_file_after_dso_recommendation")
+    assert step.conservative_latest == date(2027, 6, 14)  # contested 30-day value, shown beside latest
+    assert step.open_inputs == ("dso_recommended",)  # not guessed
 
 
 def test_window_crosses_year_boundary():
@@ -51,3 +53,25 @@ def test_planner_rejects_unit_mismatch():
     rules["opt_file_before_end"] = replace(rules["opt_file_before_end"], unit="months")
     with pytest.raises(ValueError, match="expects 'days'"):
         backward_plan(date(2027, 5, 15), rules)
+
+
+def test_dso_recommendation_narrows_window():
+    # Recommended 20 days before end: 30-day limit lands at end+10, before both end+60 and end+30.
+    (step,) = backward_plan(date(2027, 5, 15), load_rules(FIXTURE), dso_recommended=date(2027, 4, 25))
+    assert step.latest == date(2027, 5, 25)
+    assert step.conservative_latest is None  # contested value no longer changes the plan
+    assert step.open_inputs == ()
+
+
+def test_cannot_file_before_recommendation():
+    (step,) = backward_plan(date(2027, 5, 15), load_rules(FIXTURE), dso_recommended=date(2027, 3, 1))
+    assert step.earliest == date(2027, 3, 1)
+
+
+def test_contested_value_must_appear_in_its_quote(tmp_path):
+    bad = tmp_path / "rules.toml"
+    bad.write_text('[[rule]]\nid = "x"\ndescription = "d"\nvalue = 60\nunit = "days"\n'
+                   'quote = "60 days"\nsource_url = "u"\nverified_on = 2026-01-01\n'
+                   '[rule.contested]\nvalue = 3\nquote = "30 days"\nsource_url = "u"\nstatus = "s"\nstatus_url = "u"\n')
+    with pytest.raises(ValueError, match="contested: value 3 not found"):
+        load_rules(bad)
