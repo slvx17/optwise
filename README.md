@@ -48,7 +48,7 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 - [x] Input extraction (LLM labels roles, code parses dates), measured: 98% correct, 0 confident wrong dates
 - [x] LLM narrator: code template always, LLM reply only if validators pass, retry transient only (dev 100% / test 94% replies shown)
 - [ ] Retrieval over pinned 8 CFR 214.2(f) paragraphs for policy questions (keyword first, recall@k on the gold set)
-- [ ] Web app: plan screen (fact vs condition, editable missing inputs) and ask box
+- [x] Web app: free-text ask box, editable date fields, plan from code (no LLM), validated reply
 - [ ] Public demo guards: per-IP rate limit, input cap, max output tokens, daily spend ceiling, key server-side
 - [ ] Deploy (free tier) and freshness check for new eCFR versions
 - [ ] Results write-up: metrics per stage, cost per run, what failed
@@ -58,4 +58,5 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 ```bash
 python -m pytest
 python evals/run.py        # dev split; `test` is held out, run it rarely
+PYTHONPATH=src python3 -m optwise.web   # http://localhost:8000
 ```
