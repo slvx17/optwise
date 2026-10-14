@@ -46,7 +46,7 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 - [x] Gold eval set, per-stage metrics and release gates (`python evals/run.py`)
 - [x] Keyword router (route + rule ids), measured against the gates
 - [x] Input extraction (LLM labels roles, code parses dates), measured: 98% correct, 0 confident wrong dates
-- [ ] LLM narrator with structured output, validators and retry (open models via OpenRouter)
+- [x] LLM narrator: code template always, LLM reply only if validators pass, retry transient only (dev 100% / test 94% replies shown)
 - [ ] Retrieval over pinned 8 CFR 214.2(f) paragraphs for policy questions (keyword first, recall@k on the gold set)
 - [ ] Web app: plan screen (fact vs condition, editable missing inputs) and ask box
 - [ ] Public demo guards: per-IP rate limit, input cap, max output tokens, daily spend ceiling, key server-side

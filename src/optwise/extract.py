@@ -5,16 +5,14 @@ the span into a date. A span not found in the question is dropped, so no date ca
 a span code cannot pin to one day is returned unresolved (ambiguous / partial / missing), never guessed.
 """
 import calendar
-import json
-import os
 import re
-import urllib.request
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
+
+from optwise import llm
 
 ROLES = ("program_end", "dso_recommended", "ead_expiry")
-MODEL = os.environ.get("OPTWISE_EXTRACT_MODEL", "deepseek/deepseek-v4.1-flash")
+MODELS = llm.models("OPTWISE_EXTRACT_MODELS", "deepseek/deepseek-v4.1-flash")
 
 MONTHS = {m.lower(): i for i, m in enumerate(calendar.month_abbr) if m}
 MONTH = r"(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?"
@@ -128,35 +126,10 @@ SCHEMA = {
 }
 
 
-def _api_key() -> str:
-    if key := os.environ.get("OPENROUTER_API_KEY"):
-        return key
-    env = Path(__file__).parents[2] / ".env"
-    for line in env.read_text().splitlines() if env.exists() else ():
-        if line.startswith("OPENROUTER_API_KEY="):
-            return line.split("=", 1)[1].strip()
-    raise RuntimeError("OPENROUTER_API_KEY not set (env or .env)")
-
-
-def llm_label(question: str, model: str = MODEL) -> tuple[list[dict], dict]:
-    """Ask the model for {role, span} mentions. Returns (mentions, usage). Raises on HTTP or schema errors."""
-    body = {
-        "model": model,
-        "messages": [{"role": "system", "content": PROMPT}, {"role": "user", "content": question}],
-        "response_format": {"type": "json_schema", "json_schema": SCHEMA},
-        "temperature": 0,
-        "max_tokens": 2000,  # reasoning models spend tokens before the JSON
-        "usage": {"include": True},
-    }
-    req = urllib.request.Request(
-        "https://openrouter.ai/api/v1/chat/completions",
-        data=json.dumps(body).encode(),
-        headers={"Authorization": f"Bearer {_api_key()}", "Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=60) as r:
-        resp = json.load(r)
-    mentions = json.loads(resp["choices"][0]["message"]["content"])["mentions"]
-    return mentions, resp.get("usage", {})
+def llm_label(question: str) -> tuple[list[dict], dict]:
+    """Ask the model for {role, span} mentions. Returns (mentions, usage). Raises llm.LLMUnavailable."""
+    out, usage = llm.chat_json(MODELS, PROMPT, question, SCHEMA)
+    return out["mentions"], usage
 
 
 def extract(question: str, mentions: list[dict]) -> Extraction:
