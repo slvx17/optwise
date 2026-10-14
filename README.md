@@ -45,7 +45,7 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 - [x] Verify rules from official sources (5 rules from 8 CFR 214.2(f), pinned; contested 30-day limit recorded)
 - [x] Gold eval set, per-stage metrics and release gates (`python evals/run.py`)
 - [x] Keyword router (route + rule ids), measured against the gates
-- [ ] Input extraction (dates from the question), measured
+- [x] Input extraction (LLM labels roles, code parses dates), measured: 98% correct, 0 confident wrong dates
 - [ ] LLM narrator with structured output, validators and retry (open models via OpenRouter)
 - [ ] Retrieval over pinned 8 CFR 214.2(f) paragraphs for policy questions (keyword first, recall@k on the gold set)
 - [ ] Web app: plan screen (fact vs condition, editable missing inputs) and ask box

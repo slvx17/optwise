@@ -45,3 +45,13 @@
 
 10. **Facts and conditions are shown apart; uncertainty is never guessed away.**
     A plan shows the legal limit in force first. A contested rule (`[rule.contested]`) adds a second, labelled line ("conservative target: day 30, the limit if the injunction is lifted"), stating the condition rather than advising. Every date, including the conservative one, is computed in code; the LLM only phrases it. A missing input (e.g. the DSO recommendation date) is reported in `open_inputs` and shown as a relative rule ("within 30 days of your DSO's recommendation"), never filled with a guess; a what-if editor may offer a default only if it is the earliest plausible date and labelled as an assumption. Since we store nothing, change reaches returning users by pull: each rule shows when it last changed. Assumption to test: students learn of rule changes from school broadcasts and come back. If returns are low, add an `.ics` export with a recheck reminder (still stateless) before anything that stores contact details.
+
+11. **Extraction: the model reads, code decides, and when neither can, ask.**
+    The LLM only labels date mentions with a role (`program_end`, `dso_recommended`, `ead_expiry`, `other`) and a verbatim span. Code parses the span. A span not in the question is dropped, so no date can be invented. A span code cannot pin to one day stays open: `05/06/2027` is ambiguous (both readings are shown), "may 20" lacks a year, "summer 2027" becomes a range computed in code, and two dates for one role are a conflict. None of these is guessed. A regex pass flags dates the LLM did not label. The student confirms every extracted date, shown with its role, before a plan is computed. For a vague date we point them to where the true value lives (I-20, page 1, "Program End Date") rather than infer it.
+
+    Errors are not equal, so the gates split them: **input dates correct** (>= 95%; asking when we did not need to is a safe miss), **confident wrong date** (0; a wrong value or a wrong role, e.g. a degree-conferral date taken as program end) and **missing or vague input left open** (100%). Dev split, first runs (41 questions):
+
+    | Model | Correct | Confident wrong | Left open | Errors | Cost / 41 | p50 |
+    |---|---|---|---|---|---|---|
+    | deepseek/deepseek-v4.1-flash | 98% | 0% | 100% | 1 (empty response) | $0.0084 | 1.5 s |
+    | openai/gpt-oss-20b | 78% | 5% (2 role swaps) | 93% | 7 | $0.0010 | 2.6 s |
