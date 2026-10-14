@@ -53,6 +53,21 @@
   .muted { color:var(--muted); font-size:16px; } .notice { color:var(--warn); }
   footer { text-align:center; color:var(--muted); font-size:15px; margin-top:8px; }
   footer .rule { margin:0 auto 14px; }
+  .empty { color:var(--muted); text-align:center; margin:4px 0 14px; }
+  .dates { border-top:1px solid var(--line); margin-top:16px; padding-top:6px; text-align:left; }
+  .dates .lead { text-align:left; margin:10px 0 2px; }
+  .thread { display:flex; flex-direction:column; gap:14px; margin-bottom:16px; }
+  .msg { max-width:92%; }
+  .msg.user { align-self:flex-end; background:var(--bg); border:1px solid var(--line); padding:8px 14px; }
+  .msg.bot { align-self:flex-start; }
+  .msg.bot .who { font:600 12px/1 "EB Garamond", Garamond, Georgia, serif; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); margin:0 0 6px; }
+  .msg p { margin:0 0 8px; } .msg .choices button { margin:4px 6px 0 0; }
+  .receipt { font-size:14px; letter-spacing:.06em; color:var(--muted); border-top:1px dotted var(--line); padding-top:6px; margin-top:4px; }
+  .suggest { display:flex; flex-direction:column; align-items:flex-start; gap:6px; margin:0 0 12px; }
+  .suggest .lead { margin:0 0 2px; }
+  .suggest button { text-align:left; border-color:var(--gold); }
+  .composer { display:flex; gap:8px; align-items:flex-end; } .composer textarea { min-height:52px; }
+  .pending { color:var(--muted); }
   [hidden] { display:none !important; }
   @media (max-width:520px) {
     main { padding-top:32px; } h1 { font-size:30px; } .big { font-size:30px; }
@@ -69,54 +84,52 @@
     <hr class="rule">
   </header>
 
-  <section>
-    <h2><span class="num">I</span> Ask</h2>
-    <textarea id="q" maxlength="500" aria-label="Your question"></textarea>
-    <div class="chips">or try
-      <button data-q="My program ends May 15, 2027 and my DSO recommended OPT on April 20, 2027. When is my deadline?">full dates</button>
-      <button data-q="graduating summer 2027, when should I file OPT?">vague date</button>
-      <button data-q="I have 90 days after graduation to apply for OPT, right?">false premise</button>
+  <section id="plan">
+    <h2><span class="num">I</span> Your plan</h2>
+    <div id="plan_body" hidden>
+      <p class="lead">File the OPT application by</p>
+      <p class="big" id="latest"></p>
+      <p class="anno" id="anno" aria-hidden="true"></p>
+      <p class="rel" id="rel"></p>
+      <div class="lines" id="lines"></div>
     </div>
-    <button class="primary" id="ask">Ask</button>
-    <p class="notice" id="note" hidden></p>
+    <p class="empty" id="plan_empty">Your plan appears here once there is a program end date. Ask below, or enter it.</p>
+    <div class="dates">
+      <p class="lead">Based on (edit any)</p>
+      <div class="row"><label for="program_end">Program end</label><input type="date" id="program_end"></div>
+      <div class="hint" id="program_end_hint"></div>
+      <div class="row"><label for="dso_recommended">DSO recommended</label><input type="date" id="dso_recommended"></div>
+      <div class="hint" id="dso_recommended_hint"></div>
+    </div>
+    <details id="sources_box" hidden><summary>Sources</summary><div id="sources"></div></details>
   </section>
 
   <section>
-    <h2><span class="num">II</span> Based on <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">(edit any)</span></h2>
-    <div class="row"><label for="program_end">Program end</label><input type="date" id="program_end"></div>
-    <div class="hint" id="program_end_hint"></div>
-    <div class="row"><label for="dso_recommended">DSO recommended</label><input type="date" id="dso_recommended"></div>
-    <div class="hint" id="dso_recommended_hint"></div>
+    <h2><span class="num">II</span> Explore your plan</h2>
+    <div class="thread" id="thread" aria-live="polite"></div>
+    <div class="suggest" id="suggest"></div>
+    <div class="composer">
+      <textarea id="q" maxlength="500" aria-label="Your question"></textarea>
+      <button class="primary" id="ask">Ask</button>
+    </div>
   </section>
 
-  <section id="plan" hidden>
-    <h2><span class="num">III</span> Your plan</h2>
-    <p class="lead">File the OPT application by</p>
-    <p class="big" id="latest"></p>
-    <p class="anno" id="anno" aria-hidden="true"></p>
-    <p class="rel" id="rel"></p>
-    <div class="lines" id="lines"></div>
-    <details><summary>Sources</summary><div id="sources"></div></details>
-  </section>
-
-  <section id="replybox" hidden>
-    <h2><span class="num">IV</span> Answer</h2>
-    <p id="reply"></p>
-  </section>
-
-  <p class="notice" id="changed" hidden>The rules changed since your last visit. Your plan below uses the current rules.</p>
+  <p class="notice" id="changed" hidden>The rules changed since your last visit. Your plan above uses the current rules.</p>
   <footer><hr class="rule">Not legal advice; confirm with your DSO. Nothing you enter is stored on our server; your dates stay in this browser.</footer>
 </main>
 <script>
 const $ = id => document.getElementById(id);
 const ROLES = ["program_end", "dso_recommended"];
+const LABEL = {program_end: "program end", dso_recommended: "DSO recommendation"};
 const fmt = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-US", {month: "long", day: "numeric", year: "numeric"});
 const daysFromToday = iso => { const t = new Date(); t.setHours(0,0,0,0); return Math.round((new Date(iso + "T00:00:00") - t) / 864e5); };
 const store = { get() { try { return JSON.parse(localStorage.getItem("optwise") || "{}"); } catch { return {}; } },
                 set(v) { try { localStorage.setItem("optwise", JSON.stringify(v)); } catch {} } };
-let where = {};
 const roman = n => [[1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],[50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]]
   .reduce((out, [v, r]) => { while (n >= v) { out += r; n -= v; } return out; }, "");
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+let where = {};
+const asked = new Set();  // suggestions are the next step, so never re-offer one already asked
 
 async function post(path, body) {
   const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
@@ -124,35 +137,39 @@ async function post(path, body) {
   return r.json();
 }
 
-function setHint(role, text, warn) { const h = $(role + "_hint"); h.textContent = text || ""; h.className = "hint" + (warn ? " warn" : ""); }
+function setHint(role, text) { $(role + "_hint").textContent = text || ""; }
 
 function renderPlan(p) {
   where = p.where || where;
-  for (const role of ROLES) if (!$(role).value && !$(role + "_hint").dataset.keep) setHint(role, where[role] ? "Add " + where[role] + "." : "");
-  if (!p.steps.length) { $("plan").hidden = true; return; }
+  for (const role of ROLES) setHint(role, $(role).value ? "" : where[role] ? "Add " + where[role] + "." : "");
+  renderSuggestions(p.suggestions || []);
+  const has = p.steps.length > 0;
+  $("plan_body").hidden = !has; $("plan_empty").hidden = has; $("sources_box").hidden = !has;
+  if (!has) return;
   const s = p.steps[0];
-  $("plan").hidden = false;
   $("latest").textContent = fmt(s.latest);
   const [y, m, d] = s.latest.split("-").map(Number);
   $("anno").textContent = `${roman(d)} · ${roman(m)} · ${roman(y)}`;
   const toEnd = daysFromToday(s.latest), toStart = daysFromToday(s.earliest);
-  const rel = $("rel");
-  rel.className = "rel" + (toEnd < 0 ? " bad" : "");
-  rel.textContent = toEnd < 0 ? `This window closed ${-toEnd} days ago. Talk to your DSO now.`
+  $("rel").className = "rel" + (toEnd < 0 ? " bad" : "");
+  $("rel").textContent = toEnd < 0 ? `This window closed ${-toEnd} days ago. Talk to your DSO now.`
     : toStart > 0 ? `The window opens in ${toStart} days and closes in ${toEnd} days.`
     : `The window is open now and closes in ${toEnd} days.`;
-  const lines = $("lines"); lines.replaceChildren();
-  const line = (text, cls) => { const el = document.createElement("p"); el.textContent = text; if (cls) el.className = cls; lines.append(el); };
-  line(`Earliest you can file: ${fmt(s.earliest)}.`);
-  if (s.conservative_latest) line(`Conservative target: ${fmt(s.conservative_latest)}. That is the limit if the court order blocking the ${p.contested.value}-day rule is lifted; the ${p.contested.in_force}-day limit is in force today.`, "cond");
-  if (s.open_inputs.includes("dso_recommended")) line("You must also file within 30 days of your DSO's recommendation, which can make this deadline earlier. Add that date above to see it.", "cond");
+  const lines = $("lines"); lines.replaceChildren(el("p", null, `Earliest you can file: ${fmt(s.earliest)}.`));
+  if (s.conservative_latest) lines.append(el("p", "cond", `Conservative target: ${fmt(s.conservative_latest)}. That is the limit if the court order blocking the ${p.contested.value}-day rule is lifted; the ${p.contested.in_force}-day limit is in force today.`));
+  if (s.open_inputs.includes("dso_recommended")) lines.append(el("p", "cond", "You must also file within 30 days of your DSO's recommendation, which can make this deadline earlier. Add that date to see it."));
   const src = $("sources"); src.replaceChildren();
   for (const c of s.cites) {
-    const d = document.createElement("div"), a = document.createElement("a"), q = document.createElement("blockquote");
-    a.href = c.source_url; a.target = "_blank"; a.rel = "noopener"; a.textContent = c.description;
-    q.textContent = `"${c.quote}" (verified ${c.verified_on})`;
-    d.append(a, q); src.append(d);
+    const a = el("a", null, c.description); a.href = c.source_url; a.target = "_blank"; a.rel = "noopener";
+    const div = el("div"); div.append(a, el("blockquote", null, `"${c.quote}" (verified ${c.verified_on})`)); src.append(div);
   }
+}
+
+function renderSuggestions(list) {
+  const box = $("suggest"); box.replaceChildren();
+  if (!list.length) return;
+  box.append(el("p", "lead", $("thread").children.length > 1 ? "Explore next" : "Start with"));
+  for (const q of list.filter(x => !asked.has(x))) { const b = el("button", null, q); b.onclick = () => send(q); box.append(b); }
 }
 
 async function recompute() {
@@ -164,41 +181,66 @@ async function recompute() {
   renderPlan(p);
 }
 
-function choose(role, iso) { $(role).value = iso; delete $(role + "_hint").dataset.keep; setHint(role, "Picked by you."); recompute(); }
-
-function applyFields(fields) {
-  for (const role of ROLES) {
-    const f = fields[role], hint = $(role + "_hint");
-    delete hint.dataset.keep;
-    if (!f) { if ($(role).value) { hint.dataset.keep = "1"; setHint(role, "Kept from before. Clear it if it is not yours."); } continue; }
-    hint.dataset.keep = "1";
-    if (f.value) { $(role).value = f.value; setHint(role, `From your question: "${f.from}". Edit it if that is wrong.`); continue; }
-    $(role).value = "";
-    setHint(role, f.note, true);
-    for (const c of f.choices || []) {
-      const b = document.createElement("button"); b.textContent = fmt(c); b.style.marginLeft = "6px";
-      b.onclick = () => choose(role, c); hint.append(b);
-    }
-  }
+function bot(...parts) {
+  const m = el("div", "msg bot"); m.append(el("p", "who", "optwise"), ...parts);
+  $("thread").append(m); return m;
 }
 
-$("ask").onclick = async () => {
-  const q = $("q").value.trim(); if (!q) return;
-  $("ask").disabled = true; $("ask").textContent = "Reading your question...";
-  $("note").hidden = true; $("replybox").hidden = true;
+function confirmation(fields) {
+  // The assistant's voice for what code parsed; every date shown comes from the parser, not the model.
+  const out = [], read = [];
+  for (const role of ROLES) {
+    const f = fields[role]; if (!f) continue;
+    if (f.value) { $(role).value = f.value; read.push(`your ${LABEL[role]} as ${fmt(f.value)}`); continue; }
+    const p = el("p", "cond", f.note);
+    if (f.choices) {
+      const c = el("div", "choices");
+      for (const iso of f.choices) { const b = el("button", null, fmt(iso)); b.onclick = () => { $(role).value = iso; recompute(); c.replaceChildren(el("span", null, `Using ${fmt(iso)}.`)); }; c.append(b); }
+      p.append(c);
+    }
+    out.push(p);
+  }
+  if (read.length) out.unshift(el("p", null, `I read ${read.join(" and ")}. If that is wrong, edit it in your plan above.`));
+  return out;
+}
+
+function receipt(t) {
+  if (!t) return [];
+  if (t.reply === "resting") return [el("p", "receipt", "Plan computed in code · written answers resting")];
+  const parts = [];
+  if (t.dates_read) parts.push(`read ${t.dates_read} date${t.dates_read > 1 ? "s" : ""}`);
+  if (t.rules && t.rules.length) parts.push(`${t.rules.length} rule${t.rules.length > 1 ? "s" : ""} from 8 CFR 214.2(f)`);
+  parts.push("dates computed in code");
+  parts.push(t.reply === "shown" ? "answer passed every check" : t.reply === "dropped" ? "answer withheld: it failed a check" : "answer unavailable");
+  return [el("p", "receipt", parts.join(" · "))];
+}
+
+async function send(question) {
+  const q = (question || $("q").value).trim(); if (!q) return;
+  $("q").value = ""; $("ask").disabled = true; asked.add(q);
+  $("thread").append(el("div", "msg user", q));
+  const pending = bot(el("p", "pending", "Reading your question, checking 8 CFR 214.2(f)..."));
+  pending.scrollIntoView({block: "nearest", behavior: "smooth"});
   try {
     const r = await post("/api/ask", {question: q, ...Object.fromEntries(ROLES.map(x => [x, $(x).value || null]))});
-    if (r.note) { $("note").textContent = r.note; $("note").hidden = false; }
-    if (r.fields) { applyFields(r.fields); await recompute(); }
-    if (r.reply) { $("reply").textContent = r.reply; $("replybox").hidden = false; }
+    const parts = [...confirmation(r.fields || {})];
+    if (r.note) parts.push(el("p", "notice", r.note));
+    if (r.reply) parts.push(el("p", null, r.reply));
+    else if (r.route !== "out_of_scope" && r.trace && r.trace.reply !== "resting") parts.push(el("p", null, "Your plan above is what the rules compute. I could not add an answer that passed my checks."));
+    parts.push(...receipt(r.trace));
+    pending.replaceChildren(el("p", "who", "optwise"), ...parts);
+    if (r.fields) await recompute();
   } catch (e) {
-    $("note").textContent = "Something went wrong reading your question. You can enter your dates below."; $("note").hidden = false;
-  } finally { $("ask").disabled = false; $("ask").textContent = "Ask"; }
-};
-document.querySelectorAll("[data-q]").forEach(b => b.onclick = () => { $("q").value = b.dataset.q; $("ask").click(); });
-for (const role of ROLES) $(role).addEventListener("change", () => { delete $(role + "_hint").dataset.keep; setHint(role, ""); recompute(); });
-$("q").placeholder = 'e.g. "My I-20 program end date is May 15, 2027. When is the last day I can file?"';
+    pending.replaceChildren(el("p", "who", "optwise"), el("p", "notice", "Something went wrong reading your question. You can enter your dates in your plan above."));
+  } finally { $("ask").disabled = false; }
+}
 
+$("ask").onclick = () => send();
+$("q").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+for (const role of ROLES) $(role).addEventListener("change", recompute);
+$("q").placeholder = "Ask about your OPT dates, or pick a suggestion";
+
+bot(el("p", null, "Tell me your program end date, or ask anything about when to file for OPT. I compute every date from the regulation and show my sources."));
 const saved = store.get();
 for (const role of ROLES) if (saved[role]) $(role).value = saved[role];
 recompute();

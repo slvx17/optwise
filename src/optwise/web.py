@@ -9,7 +9,7 @@ import hashlib
 import json
 import os
 import threading
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -92,7 +92,7 @@ def plan_json(program_end: date | None, dso: date | None) -> dict:
     """Structured plan for the screen. Every date here comes from the engine."""
     out = {"rules_version": RULES_VERSION, "steps": [], "missing": [], "where": WHERE_TO_FIND}
     if program_end is None:
-        out["missing"] = ["program_end"]
+        out["missing"], out["suggestions"] = ["program_end"], STARTERS
         return out
     for s in backward_plan(program_end, RULES, dso):
         out["steps"].append({
@@ -106,7 +106,29 @@ def plan_json(program_end: date | None, dso: date | None) -> dict:
     out["contested"] = {"value": contested.value, "in_force": RULES["opt_file_after_end"].value,
                         "status": contested.status, "status_url": contested.status_url}
     out["missing"] = [r for r in OPT_ROLES if r in out["steps"][0]["open_inputs"]] if out["steps"] else []
+    out["suggestions"] = _suggest(program_end, out["steps"])
     return out
+
+
+STARTERS = ["My program ends May 15, 2027 and my DSO recommended OPT on April 20, 2027. When is my deadline?",
+            "graduating summer 2027, when should I file OPT?",
+            "I have 90 days after graduation to apply for OPT, right?"]
+
+
+def _suggest(program_end: date | None, steps: list[dict]) -> list[str]:
+    """Guided follow-ups from the plan's state, computed in code. Each matches a follow-up shape the
+    gold set covers (q062 DSO what-if, q028 court order, q063 why, q064 earliest), so the default path
+    is one the evals vouch for. Any date in a suggestion comes from code."""
+    if not steps:
+        return STARTERS
+    s, out = steps[0], []
+    if "dso_recommended" in s["open_inputs"]:
+        out.append(f"What if my DSO recommends on {_d(program_end - timedelta(days=30))}?")
+    if s["conservative_latest"]:
+        out.append("What happens to my plan if the court order is lifted?")
+    out.append(f"Why is my deadline {_d(date.fromisoformat(s['latest']))}?")
+    out.append("What's the earliest I can file?")
+    return out[:3]
 
 
 def _d(d: date) -> str:
@@ -154,7 +176,7 @@ def ask(question: str, known: dict[str, date], ip: str = "local") -> dict:
 
 def _plan_only(route_name: str, known: dict[str, date], note: str) -> dict:
     """The free path: no LLM, the plan from the fields. Every limit degrades to this, never to an error."""
-    return {"route": route_name, "fields": {}, "note": note,
+    return {"route": route_name, "fields": {}, "note": note, "trace": {"reply": "resting"},
             "plan": plan_json(known.get("program_end"), known.get("dso_recommended")), "reply": None}
 
 
@@ -179,7 +201,9 @@ def _ask(question: str, known: dict[str, date], r) -> dict:
     missing = plan["missing"] if r.route == "deadline" and "stem_file_before_ead_expiry" not in ids else []
     a = narrate(question, steps, {i: RULES[i] for i in sorted(ids)}, missing)
     BUDGET.add(cost + a.usage.get("cost", 0))
-    return {"route": r.route, "fields": fields, "note": note, "plan": plan, "reply": a.reply}
+    status = "shown" if a.reply else "unavailable" if any(x.startswith("unavailable") for x in a.rejected) else "dropped"
+    trace = {"dates_read": sum("value" in f for f in fields.values()), "rules": sorted(ids), "reply": status}
+    return {"route": r.route, "fields": fields, "note": note, "plan": plan, "reply": a.reply, "trace": trace}
 
 
 class Handler(BaseHTTPRequestHandler):

@@ -61,6 +61,8 @@ Hard rules:
 - Cite the rule ids you rely on. Each entry in `quotes` must be copied exactly from a rule's quote.
 - A rule's `contested` value is NOT in force; if you mention it, say it is blocked by a court order.
 - If an input is missing, do not guess it; say what is needed.
+- Write for a student: never put rule ids in `answer` (they go in `cited_rule_ids`), and do not describe
+  what the planner can or cannot compute unless asked.
 - Not legal advice: state what the rules say, do not tell the student what to do. At most 90 words."""
 
 SCHEMA = {
