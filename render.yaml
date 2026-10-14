@@ -1,0 +1,12 @@
+# Render Blueprint: one free Docker web service. The key is entered in the dashboard (sync: false),
+# never committed. Free instances sleep after 15 idle minutes and take ~50 s to wake.
+services:
+  - type: web
+    name: optwise
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false
