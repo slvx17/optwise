@@ -8,7 +8,8 @@ Run: PYTHONPATH=src python3 -m optwise.web   (PORT env, default 8000)
 import hashlib
 import json
 import os
-from datetime import date
+import threading
+from datetime import date, datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -25,6 +26,44 @@ RULES = load_rules(RULES_PATH)
 RULES_VERSION = hashlib.sha256(RULES_PATH.read_bytes()).hexdigest()[:12]
 PAGE = (Path(__file__).parent / "static" / "index.html").read_bytes()
 OPT_ROLES = ("program_end", "dso_recommended")
+
+
+class Budget:
+    """Global LLM spend ceilings in real dollars (usage.cost), reset daily and weekly, UTC (DESIGN #14).
+
+    ponytail: in memory, one instance; a restart resets the counters. The OpenRouter key's monthly
+    limit is the hard floor under that. Move to a shared store if we run more than one instance.
+    """
+
+    def __init__(self, daily_usd: float, weekly_usd: float):
+        self.daily, self.weekly = daily_usd, weekly_usd
+        self.lock = threading.Lock()
+        self.day = self.week = None
+        self.spent_day = self.spent_week = 0.0
+
+    def _roll(self) -> None:
+        today = datetime.now(timezone.utc).date()
+        if today != self.day:
+            self.day, self.spent_day = today, 0.0
+        if today.isocalendar()[:2] != self.week:
+            self.week, self.spent_week = today.isocalendar()[:2], 0.0
+
+    def open(self) -> bool:
+        # ponytail: check-then-spend, so parallel asks can overshoot by at most MAX_ASKS calls (~$0.003).
+        with self.lock:
+            self._roll()
+            return self.spent_day < self.daily and self.spent_week < self.weekly
+
+    def add(self, usd: float) -> None:
+        with self.lock:
+            self._roll()
+            self.spent_day += usd
+            self.spent_week += usd
+
+
+BUDGET = Budget(float(os.environ.get("OPTWISE_DAILY_USD", 1)), float(os.environ.get("OPTWISE_WEEKLY_USD", 5)))
+ASK_SLOTS = threading.BoundedSemaphore(int(os.environ.get("OPTWISE_MAX_ASKS", 8)))  # LLM asks in flight at once
+RESTING = "Written answers are resting ({why}). Your plan below is computed without them; enter or edit your dates."
 
 
 def _date(v) -> date | None:
@@ -83,9 +122,27 @@ def ask(question: str, known: dict[str, date]) -> dict:
     if r.route == "out_of_scope":
         return {"route": "out_of_scope", "reply": "optwise only answers post-completion OPT and STEM OPT timing "
                 "questions from 8 CFR 214.2(f). It cannot predict approvals or give legal advice; please ask your DSO."}
-    fields, note = {}, None
+    if not BUDGET.open():
+        return _plan_only(r.route, known, RESTING.format(why="this free demo's daily limit is reached; back tomorrow, UTC"))
+    if not ASK_SLOTS.acquire(blocking=False):
+        return _plan_only(r.route, known, RESTING.format(why="many people are asking right now; try again in a minute"))
     try:
-        mentions, _ = llm_label(question)
+        return _ask(question, known, r)
+    finally:
+        ASK_SLOTS.release()
+
+
+def _plan_only(route_name: str, known: dict[str, date], note: str) -> dict:
+    """The free path: no LLM, the plan from the fields. Every limit degrades to this, never to an error."""
+    return {"route": route_name, "fields": {}, "note": note,
+            "plan": plan_json(known.get("program_end"), known.get("dso_recommended")), "reply": None}
+
+
+def _ask(question: str, known: dict[str, date], r) -> dict:
+    fields, note, cost = {}, None, 0.0
+    try:
+        mentions, usage = llm_label(question)
+        cost += usage.get("cost", 0)
         x = extract(question, mentions)
         exact = x.exact()
         fields = {role: _field(role, [e for e in x.inputs if e.role == role], exact) for role in ROLES}
@@ -101,6 +158,7 @@ def ask(question: str, known: dict[str, date]) -> dict:
     ids = set(r.rule_ids) | {c for s in steps for c in s.cites}
     missing = plan["missing"] if r.route == "deadline" and "stem_file_before_ead_expiry" not in ids else []
     a = narrate(question, steps, {i: RULES[i] for i in sorted(ids)}, missing)
+    BUDGET.add(cost + a.usage.get("cost", 0))
     return {"route": r.route, "fields": fields, "note": note, "plan": plan, "reply": a.reply}
 
 

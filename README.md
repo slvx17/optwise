@@ -49,7 +49,7 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 - [x] LLM narrator: code template always, LLM reply only if validators pass, retry transient only (dev 100% / test 94% replies shown)
 - [ ] Retrieval over pinned 8 CFR 214.2(f) paragraphs for policy questions (keyword first, recall@k on the gold set)
 - [x] Web app: free-text ask box, editable date fields, plan from code (no LLM), validated reply
-- [ ] Public demo guards: per-IP rate limit, input cap, max output tokens, daily spend ceiling, key server-side
+- [x] Public demo guards: daily and weekly spend ceilings in dollars, 8 asks in flight, input cap, key server-side; limits degrade to plan-only
 - [ ] Deploy (free tier) and freshness check for new eCFR versions
 - [ ] Results write-up: metrics per stage, cost per run, what failed
 
