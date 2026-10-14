@@ -1,0 +1,7 @@
+.git
+.env
+.claude
+.venv
+__pycache__
+evals
+tests
