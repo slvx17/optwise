@@ -59,11 +59,14 @@ Hard rules:
   read two ways, do not restate it as a full date; ask for the exact date instead.
 - In `answer`, write dates like "May 20, 2027". List every date you mention in `dates` as YYYY-MM-DD.
 - Cite the rule ids you rely on. Each entry in `quotes` must be copied exactly from a rule's quote.
-- A rule's `contested` value is NOT in force; if you mention it, say it is blocked by a court order.
+- A rule's `contested` value is NOT in force. If any rule in the facts has one, always include one short
+  clause saying the shorter limit is blocked by a court order and the in-force limit applies, even when brief.
 - If an input is missing, do not guess it; say what is needed.
 - Write for a student: never put rule ids in `answer` (they go in `cited_rule_ids`), and do not describe
   what the planner can or cannot compute unless asked.
-- Not legal advice: state what the rules say, do not tell the student what to do. At most 90 words."""
+- Be brief: one sentence that answers the question directly, then at most two short sentences of why.
+  At most 60 words. The plan card already shows the deadline; do not restate every date.
+- Not legal advice: state what the rules say, do not tell the student what to do."""
 
 SCHEMA = {
     "name": "reply",

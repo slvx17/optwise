@@ -68,6 +68,19 @@
   .suggest button { text-align:left; border-color:var(--gold); }
   .composer { display:flex; gap:8px; align-items:flex-end; } .composer textarea { min-height:52px; }
   .pending { color:var(--muted); }
+  strong.date { color:var(--gold); font-weight:600; white-space:nowrap; }
+  .fasti { position:relative; height:96px; margin:18px 8px 6px; }
+  .fasti .bar { position:absolute; left:0; right:0; top:47px; border-top:1px solid var(--gold); border-bottom:1px solid var(--gold); height:4px; }
+  .fasti .span { position:absolute; top:47px; height:4px; background:var(--accent); opacity:.85; }
+  .fasti .mark { position:absolute; top:41px; width:1px; height:16px; background:var(--fg); }
+  .fasti .lab { position:absolute; transform:translateX(-50%); font-size:13px; line-height:1.2; text-align:center; white-space:nowrap; color:var(--muted); }
+  .fasti .lab b { display:block; color:var(--fg); font-weight:600; letter-spacing:.08em; text-transform:uppercase; font-size:11px; }
+  .fasti .lab.up { top:0; } .fasti .lab.down { top:62px; }
+  .fasti .lab.edge-l { transform:none; text-align:left; } .fasti .lab.edge-r { transform:translateX(-100%); text-align:right; }
+  .fasti .today { position:absolute; top:36px; width:9px; height:9px; margin-left:-4px; background:var(--gold); transform:rotate(45deg); }
+  .fasti .lab.now b { color:var(--gold); }
+  .actions { display:flex; justify-content:center; margin:14px 0 4px; }
+  #plan_body .lines { margin-top:6px; }
   [hidden] { display:none !important; }
   @media (max-width:520px) {
     main { padding-top:32px; } h1 { font-size:30px; } .big { font-size:30px; }
@@ -91,7 +104,9 @@
       <p class="big" id="latest"></p>
       <p class="anno" id="anno" aria-hidden="true"></p>
       <p class="rel" id="rel"></p>
+      <div class="fasti" id="fasti" aria-hidden="true"></div>
       <div class="lines" id="lines"></div>
+      <div class="actions"><button id="ics">Add to calendar</button></div>
     </div>
     <p class="empty" id="plan_empty">Your plan appears here once there is a program end date. Ask below, or enter it.</p>
     <div class="dates">
@@ -128,7 +143,14 @@ const store = { get() { try { return JSON.parse(localStorage.getItem("optwise") 
 const roman = n => [[1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],[50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]]
   .reduce((out, [v, r]) => { while (n >= v) { out += r; n -= v; } return out; }, "");
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-let where = {};
+let where = {}, current = null;
+// Dates in replies passed the validators (engine-computed or the student's own), so they are shown as checked facts.
+const DATE_RX = /\b((?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.? \d{1,2}, \d{4})\b/g;
+function rich(cls, text) {
+  const p = el("p", cls);
+  text.split(DATE_RX).forEach((part, i) => p.append(i % 2 ? el("strong", "date", part) : part));
+  return p;
+}
 const asked = new Set();  // suggestions are the next step, so never re-offer one already asked
 
 async function post(path, body) {
@@ -155,14 +177,52 @@ function renderPlan(p) {
   $("rel").textContent = toEnd < 0 ? `This window closed ${-toEnd} days ago. Talk to your DSO now.`
     : toStart > 0 ? `The window opens in ${toStart} days and closes in ${toEnd} days.`
     : `The window is open now and closes in ${toEnd} days.`;
-  const lines = $("lines"); lines.replaceChildren(el("p", null, `Earliest you can file: ${fmt(s.earliest)}.`));
-  if (s.conservative_latest) lines.append(el("p", "cond", `Conservative target: ${fmt(s.conservative_latest)}. That is the limit if the court order blocking the ${p.contested.value}-day rule is lifted; the ${p.contested.in_force}-day limit is in force today.`));
+  current = s;
+  renderFasti(s, $("program_end").value);
+  const lines = $("lines"); lines.replaceChildren(rich(null, `Earliest you can file: ${fmt(s.earliest)}.`));
+  if (s.conservative_latest) lines.append(rich("cond", `Conservative target: ${fmt(s.conservative_latest)}. That is the limit if the court order blocking the ${p.contested.value}-day rule is lifted; the ${p.contested.in_force}-day limit is in force today.`));
   if (s.open_inputs.includes("dso_recommended")) lines.append(el("p", "cond", "You must also file within 30 days of your DSO's recommendation, which can make this deadline earlier. Add that date to see it."));
   const src = $("sources"); src.replaceChildren();
   for (const c of s.cites) {
     const a = el("a", null, c.description); a.href = c.source_url; a.target = "_blank"; a.rel = "noopener";
     const div = el("div"); div.append(a, el("blockquote", null, `"${c.quote}" (verified ${c.verified_on})`)); src.append(div);
   }
+}
+
+function renderFasti(s, programEnd) {
+  // Roman-calendar style timeline of the filing window. Positions are proportional to days.
+  const box = $("fasti"); box.replaceChildren();
+  const t = iso => new Date(iso + "T00:00:00").getTime();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const pts = [["Opens", s.earliest], ["Program end", programEnd], ["Conservative", s.conservative_latest], ["Deadline", s.latest]]
+    .filter(([, d]) => d).sort((a, b) => t(a[1]) - t(b[1]));
+  const lo = t(pts[0][1]), hi = t(pts[pts.length - 1][1]), span = Math.max(hi - lo, 1);
+  const x = ms => Math.min(100, Math.max(0, (ms - lo) / span * 100));
+  const short = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-US", {month: "short", day: "numeric"});
+  box.append(el("div", "bar"));
+  const fill = el("div", "span"); fill.style.left = x(t(s.earliest)) + "%"; fill.style.width = (x(t(s.latest)) - x(t(s.earliest))) + "%"; box.append(fill);
+  pts.forEach(([name, d], i) => {
+    const m = el("div", "mark"); m.style.left = x(t(d)) + "%"; box.append(m);
+    const lab = el("div", "lab " + (i % 2 ? "down" : "up")); lab.style.left = x(t(d)) + "%";
+    if (x(t(d)) < 12) lab.classList.add("edge-l"); else if (x(t(d)) > 88) lab.classList.add("edge-r");
+    lab.append(el("b", null, name), short(d)); box.append(lab);
+  });
+  if (today.getTime() >= lo && today.getTime() <= hi) {
+    const d = el("div", "today"); d.style.left = x(today.getTime()) + "%"; d.title = "today"; box.append(d);
+  }
+}
+
+function downloadIcs() {
+  // Stateless reminder (DESIGN #10): the deadline with a 14-day alarm, and the day the window opens.
+  if (!current) return;
+  const day = iso => iso.replaceAll("-", ""), next = iso => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10).replaceAll("-", ""); };
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+  const ev = (uid, iso, title, alarm) => ["BEGIN:VEVENT", `UID:${uid}-${day(iso)}@optwise`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${day(iso)}`, `DTEND;VALUE=DATE:${next(iso)}`,
+    `SUMMARY:${title}`, "DESCRIPTION:From optwise (8 CFR 214.2(f)). Recheck before filing: rules can change. Not legal advice.",
+    ...(alarm ? ["BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${title}`, "TRIGGER:-P14D", "END:VALARM"] : []), "END:VEVENT"];
+  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//optwise//EN",
+    ...ev("opens", current.earliest, "OPT filing window opens"), ...ev("deadline", current.latest, "OPT filing deadline", true), "END:VCALENDAR"].join("\r\n");
+  const a = el("a"); a.href = URL.createObjectURL(new Blob([ics], {type: "text/calendar"})); a.download = "opt-deadline.ics"; a.click();
 }
 
 function renderSuggestions(list) {
@@ -200,7 +260,7 @@ function confirmation(fields) {
     }
     out.push(p);
   }
-  if (read.length) out.unshift(el("p", null, `I read ${read.join(" and ")}. If that is wrong, edit it in your plan above.`));
+  if (read.length) out.unshift(rich(null, `I read ${read.join(" and ")}. If that is wrong, edit it in your plan above.`));
   return out;
 }
 
@@ -217,7 +277,7 @@ function receipt(t) {
 
 async function send(question) {
   const q = (question || $("q").value).trim(); if (!q) return;
-  $("q").value = ""; $("ask").disabled = true; asked.add(q);
+  $("q").value = ""; $("ask").disabled = true; asked.add(q); $("suggest").replaceChildren();
   $("thread").append(el("div", "msg user", q));
   const pending = bot(el("p", "pending", "Reading your question, checking 8 CFR 214.2(f)..."));
   pending.scrollIntoView({block: "nearest", behavior: "smooth"});
@@ -225,7 +285,7 @@ async function send(question) {
     const r = await post("/api/ask", {question: q, ...Object.fromEntries(ROLES.map(x => [x, $(x).value || null]))});
     const parts = [...confirmation(r.fields || {})];
     if (r.note) parts.push(el("p", "notice", r.note));
-    if (r.reply) parts.push(el("p", null, r.reply));
+    if (r.reply) parts.push(rich(null, r.reply));
     else if (r.route !== "out_of_scope" && r.trace && r.trace.reply !== "resting") parts.push(el("p", null, "Your plan above is what the rules compute. I could not add an answer that passed my checks."));
     parts.push(...receipt(r.trace));
     pending.replaceChildren(el("p", "who", "optwise"), ...parts);
@@ -236,6 +296,7 @@ async function send(question) {
 }
 
 $("ask").onclick = () => send();
+$("ics").onclick = downloadIcs;
 $("q").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
 for (const role of ROLES) $(role).addEventListener("change", recompute);
 $("q").placeholder = "Ask about your OPT dates, or pick a suggestion";
