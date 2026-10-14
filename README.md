@@ -2,7 +2,9 @@
 
 An OPT / STEM OPT planner that works backward from your graduation date, cites official sources, computes deadlines in plain code, and refuses to guess.
 
-> **Status: early scaffold.** Nothing here is legal advice, and no rule in `data/rules.toml` is verified yet. Always confirm with your DSO.
+**Live demo: [optwise.onrender.com](https://optwise.onrender.com)** (free tier: the first visit after 15 idle minutes takes up to a minute). Write-up: [May 6 or June 5?](https://slvx17.github.io/writing/may-6-or-june-5.html)
+
+> Not legal advice. Rules are verified against a pinned version of 8 CFR 214.2(f); always confirm with your DSO.
 
 ## Why
 
@@ -51,7 +53,7 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 - [x] Web app: free-text ask box, editable date fields, plan from code (no LLM), validated reply
 - [x] Public demo guards: daily and weekly spend ceilings in dollars, 8 asks in flight, input cap, key server-side; limits degrade to plan-only
 - [x] Freshness check for new eCFR versions (weekly CI, `python evals/freshness.py`)
-- [ ] Deploy (free tier)
+- [x] Deploy (Render free tier, Docker, `render.yaml`)
 - [ ] Results write-up: metrics per stage, cost per run, what failed
 
 ## Development

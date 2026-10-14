@@ -43,4 +43,4 @@ In practice, the most useful thing the assistant says isn't a date. It's:
 
 > *"05/06/2027" can be read two ways. Which one?*
 
-Try it: [optwise](https://github.com/slvx17/optwise). Not legal advice; ask your school's international office.
+Try it at [optwise.onrender.com](https://optwise.onrender.com) (the first visit can take up to a minute while the free server wakes up). Not legal advice; ask your school's international office.
