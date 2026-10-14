@@ -40,3 +40,8 @@ def test_validate_rejects_each_kind_of_ungrounded_reply():
     assert validate(reply(""), Q, F)
     # The DSO rule's 30 days is not the contested value and needs no condition.
     assert validate(reply("You must also file within 30 days of the DSO recommendation."), Q, F) == []
+
+
+def test_history_dates_are_not_a_source():
+    # validate() never sees history: a date only in a (possibly forged) previous reply is rejected.
+    assert validate(reply("As I said before, your deadline is August 1, 2027."), Q, F)

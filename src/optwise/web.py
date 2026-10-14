@@ -156,7 +156,7 @@ def _field(role: str, entries: list, exact: dict) -> dict | None:
     return None
 
 
-def ask(question: str, known: dict[str, date], ip: str = "local") -> dict:
+def ask(question: str, known: dict[str, date], ip: str = "local", history: dict | None = None) -> dict:
     """known: dates already in the fields; a date in the question replaces them."""
     r = route(question, any(known.values()))
     if r.route == "out_of_scope":
@@ -169,7 +169,7 @@ def ask(question: str, known: dict[str, date], ip: str = "local") -> dict:
     if not ASK_SLOTS.acquire(blocking=False):
         return _plan_only(r.route, known, RESTING.format(why="many people are asking right now; try again in a minute"))
     try:
-        return _ask(question, known, r)
+        return _ask(question, known, r, history)
     finally:
         ASK_SLOTS.release()
 
@@ -180,7 +180,7 @@ def _plan_only(route_name: str, known: dict[str, date], note: str) -> dict:
             "plan": plan_json(known.get("program_end"), known.get("dso_recommended")), "reply": None}
 
 
-def _ask(question: str, known: dict[str, date], r) -> dict:
+def _ask(question: str, known: dict[str, date], r, history: dict | None = None) -> dict:
     fields, note, cost = {}, None, 0.0
     try:
         mentions, usage = llm_label(question)
@@ -199,7 +199,7 @@ def _ask(question: str, known: dict[str, date], r) -> dict:
     steps = backward_plan(exact["program_end"], RULES, exact.get("dso_recommended")) if "program_end" in exact else []
     ids = set(r.rule_ids) | {c for s in steps for c in s.cites}
     missing = plan["missing"] if r.route == "deadline" and "stem_file_before_ead_expiry" not in ids else []
-    a = narrate(question, steps, {i: RULES[i] for i in sorted(ids)}, missing)
+    a = narrate(question, steps, {i: RULES[i] for i in sorted(ids)}, missing, history)
     BUDGET.add(cost + a.usage.get("cost", 0))
     status = "shown" if a.reply else "unavailable" if any(x.startswith("unavailable") for x in a.rejected) else "dropped"
     trace = {"dates_read": sum("value" in f for f in fields.values()), "rules": sorted(ids), "reply": status}
@@ -237,7 +237,8 @@ class Handler(BaseHTTPRequestHandler):
                 q = str(body.get("question", "")).strip()
                 if not q:
                     return self._json(400, {"error": "empty question"})
-                return self._json(200, ask(q[:500], {r: _date(body.get(r)) for r in OPT_ROLES}, self._ip()))
+                h = body.get("history") if isinstance(body.get("history"), dict) else None
+                return self._json(200, ask(q[:500], {r: _date(body.get(r)) for r in OPT_ROLES}, self._ip(), h))
             self._json(404, {"error": "not found"})
         except (ValueError, json.JSONDecodeError):
             self._json(400, {"error": "bad input"})

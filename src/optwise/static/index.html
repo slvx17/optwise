@@ -151,7 +151,8 @@ function rich(cls, text) {
   text.split(DATE_RX).forEach((part, i) => p.append(i % 2 ? el("strong", "date", part) : part));
   return p;
 }
-const asked = new Set();  // suggestions are the next step, so never re-offer one already asked
+const asked = new Set();
+let last = null;  // previous {question, reply}, sent so "the second one" can be resolved  // suggestions are the next step, so never re-offer one already asked
 
 async function post(path, body) {
   const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
@@ -282,7 +283,8 @@ async function send(question) {
   const pending = bot(el("p", "pending", "Reading your question, checking 8 CFR 214.2(f)..."));
   pending.scrollIntoView({block: "nearest", behavior: "smooth"});
   try {
-    const r = await post("/api/ask", {question: q, ...Object.fromEntries(ROLES.map(x => [x, $(x).value || null]))});
+    const r = await post("/api/ask", {question: q, history: last, ...Object.fromEntries(ROLES.map(x => [x, $(x).value || null]))});
+    last = {question: q, reply: r.reply || ""};
     const parts = [...confirmation(r.fields || {})];
     if (r.note) parts.push(el("p", "notice", r.note));
     if (r.reply) parts.push(rich(null, r.reply));

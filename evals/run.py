@@ -87,7 +87,7 @@ def run_narration(gold: list[dict]) -> tuple[list, list[str]]:
             steps = backward_plan(inputs["program_end"], RULES, inputs.get("dso_recommended"))
             ids |= {c for s in steps for c in s.cites}
         t = time.time()
-        a = narrate(g["question"], steps, {i: RULES[i] for i in sorted(ids)}, g["must_ask_for"])
+        a = narrate(g["question"], steps, {i: RULES[i] for i in sorted(ids)}, g["must_ask_for"], g.get("history"))
         return g, a, time.time() - t
 
     with ThreadPoolExecutor(8) as pool:
