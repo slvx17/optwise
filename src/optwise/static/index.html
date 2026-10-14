@@ -4,42 +4,75 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>optwise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#fafaf8; --fg:#1b1b1a; --muted:#6b6b66; --line:#e2e1dc; --card:#fff; --accent:#1f5fbf; --warn:#a15c00; --bad:#b3261e; }
+  /* Travertine, iron-gall ink, Pompeian red, ochre. Dark: basalt and gilt. */
+  :root { --bg:#f3ede1; --card:#faf6ee; --fg:#2a2420; --muted:#7a6f63; --line:#cfc3ae; --accent:#9b2d20; --gold:#a8812f; --warn:#9a6414; --bad:#9b2d20; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#151514; --fg:#ecebe6; --muted:#a09f99; --line:#33332f; --card:#1d1d1b; --accent:#7fb0ff; --warn:#f0b35a; --bad:#ff8a80; }
+    :root { --bg:#191715; --card:#211e1b; --fg:#ece4d4; --muted:#a3998a; --line:#4a4238; --accent:#e0775f; --gold:#d4ad5a; --warn:#e2b35f; --bad:#f08a72; }
   }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, -apple-system, sans-serif; }
-  main { max-width:680px; margin:0 auto; padding:24px 16px 48px; }
-  h1 { font-size:20px; margin:0 0 4px; } .sub { color:var(--muted); margin:0 0 20px; font-size:14px; }
-  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:12px; }
-  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 10px; font-weight:600; }
-  textarea { width:100%; min-height:72px; font:inherit; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); resize:vertical; }
-  button { font:inherit; border:1px solid var(--line); background:var(--bg); color:var(--fg); border-radius:999px; padding:4px 12px; cursor:pointer; }
-  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); border-radius:8px; padding:8px 16px; }
-  button:disabled { opacity:.5; cursor:wait; }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; font-size:14px; }
-  .row { display:grid; grid-template-columns:150px 1fr; gap:8px; align-items:center; margin:8px 0; }
-  .row label { font-weight:600; } input[type=date] { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); }
-  .hint { grid-column:2; color:var(--muted); font-size:13px; margin-top:-4px; } .hint.warn { color:var(--warn); }
-  .big { font-size:28px; font-weight:700; margin:0; } .rel { font-weight:600; margin:2px 0 12px; }
-  .rel.bad { color:var(--bad); } .lines p { margin:6px 0; } .cond { color:var(--warn); }
-  details { margin-top:10px; font-size:14px; } blockquote { margin:6px 0; padding-left:10px; border-left:3px solid var(--line); color:var(--muted); }
-  a { color:var(--accent); } .muted { color:var(--muted); font-size:13px; } .notice { color:var(--warn); font-size:14px; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:19px/1.55 "EB Garamond", Garamond, Georgia, serif; font-variant-numeric: oldstyle-nums; }
+  main { max-width:660px; margin:0 auto; padding:48px 16px 56px; }
+  header { text-align:center; margin-bottom:32px; }
+  h1 { font:600 40px/1 "Cinzel", "Trajan Pro", serif; letter-spacing:.18em; margin:0; padding-left:.18em; }
+  .motto { font-style:italic; color:var(--gold); margin:10px 0 0; font-size:18px; letter-spacing:.02em; }
+  .sub { color:var(--muted); margin:14px auto 0; max-width:30em; font-size:17px; }
+  .rule { border:0; height:5px; margin:22px auto 0; width:140px; border-top:1px solid var(--gold); border-bottom:1px solid var(--gold); }
+  section { background:var(--card); border:1px solid var(--line); outline:1px solid var(--line); outline-offset:3px; padding:22px 22px 20px; margin:0 4px 24px; }
+  h2 { font:600 14px/1 "Cinzel", serif; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin:0 0 16px; display:flex; align-items:center; gap:12px; }
+  h2::after { content:""; flex:1; border-top:1px solid var(--line); }
+  h2 .num { color:var(--gold); }
+  textarea { width:100%; min-height:84px; font:inherit; padding:12px 14px; border:1px solid var(--line); border-radius:0; background:var(--bg); color:var(--fg); resize:vertical; }
+  textarea::placeholder { color:var(--muted); font-style:italic; }
+  textarea:focus, input:focus, button:focus-visible { outline:2px solid var(--gold); outline-offset:1px; }
+  button { font:inherit; font-size:16px; border:1px solid var(--line); background:transparent; color:var(--fg); border-radius:0; padding:2px 12px; cursor:pointer; font-style:italic; }
+  button:hover { border-color:var(--gold); color:var(--accent); }
+  button.primary { font:600 14px/1 "Cinzel", serif; font-style:normal; letter-spacing:.16em; text-transform:uppercase; background:var(--accent); color:var(--card); border-color:var(--accent); padding:12px 26px; }
+  button.primary:hover { background:var(--fg); border-color:var(--fg); color:var(--card); }
+  button:disabled { opacity:.55; cursor:wait; }
+  .chips { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:12px 0 18px; color:var(--muted); font-size:16px; font-style:italic; }
+  .row { display:grid; grid-template-columns:170px 1fr; gap:10px; align-items:center; margin:10px 0 4px; }
+  .row label { font:600 13px/1.2 "Cinzel", serif; letter-spacing:.1em; text-transform:uppercase; }
+  input[type=date] { font:inherit; padding:6px 10px; border:0; border-bottom:1px solid var(--fg); border-radius:0; background:transparent; color:var(--fg); }
+  .hint { grid-column:2; color:var(--muted); font-size:16px; font-style:italic; margin:0 0 8px 180px; } .hint.warn { color:var(--warn); }
+  .hint button { font-style:normal; margin-left:6px; }
+  #plan { text-align:center; }
+  #plan .lines, #plan details { text-align:left; }
+  .lead { font:400 13px/1 "Cinzel", serif; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin:4px 0 10px; }
+  .big { font:700 40px/1.1 "Cinzel", serif; letter-spacing:.04em; margin:0; font-variant-numeric: lining-nums; }
+  .anno { font-style:italic; color:var(--gold); margin:6px 0 0; letter-spacing:.06em; }
+  .rel { margin:10px 0 18px; font-size:18px; } .rel.bad { color:var(--bad); font-weight:600; }
+  .lines { border-top:1px solid var(--line); padding-top:12px; } .lines p { margin:8px 0; } .cond { color:var(--warn); }
+  details { margin-top:14px; font-size:17px; } summary { font:600 13px/1.6 "Cinzel", serif; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; color:var(--accent); }
+  blockquote { margin:8px 0 14px; padding:2px 0 2px 14px; border-left:2px solid var(--gold); color:var(--muted); font-style:italic; }
+  a { color:var(--accent); text-decoration-thickness:1px; text-underline-offset:3px; }
+  #reply { margin:0; } #reply::first-letter { font:600 2.6em/0.9 "Cinzel", serif; float:left; margin:4px 8px 0 0; color:var(--accent); }
+  .muted { color:var(--muted); font-size:16px; } .notice { color:var(--warn); font-style:italic; }
+  footer { text-align:center; color:var(--muted); font-size:15px; font-style:italic; margin-top:8px; }
+  footer .rule { margin:0 auto 14px; }
   [hidden] { display:none !important; }
-  @media (max-width:480px) { .row { grid-template-columns:1fr; } .hint { grid-column:1; } }
+  @media (max-width:520px) {
+    main { padding-top:32px; } h1 { font-size:30px; } .big { font-size:30px; }
+    .row { grid-template-columns:1fr; } .hint { margin-left:0; } section { padding:18px 16px; }
+  }
 </style>
 </head>
 <body>
 <main>
-  <h1>optwise</h1>
-  <p class="sub">When to file for post-completion OPT, worked out from 8 CFR 214.2(f). Dates are computed in code, never guessed.</p>
+  <header>
+    <h1>OPTWISE</h1>
+    <p class="motto">Ex lege, non ex coniectura</p>
+    <p class="sub">When to file for post-completion OPT, worked out from 8 CFR 214.2(f). Every date is computed, none is guessed.</p>
+    <hr class="rule">
+  </header>
 
   <section>
-    <h2>Ask</h2>
+    <h2><span class="num">I</span> Ask</h2>
     <textarea id="q" maxlength="500" aria-label="Your question"></textarea>
-    <div class="chips">try:
+    <div class="chips">or try
       <button data-q="My program ends May 15, 2027 and my DSO recommended OPT on April 20, 2027. When is my deadline?">full dates</button>
       <button data-q="graduating summer 2027, when should I file OPT?">vague date</button>
       <button data-q="I have 90 days after graduation to apply for OPT, right?">false premise</button>
@@ -49,7 +82,7 @@
   </section>
 
   <section>
-    <h2>Based on (edit any)</h2>
+    <h2><span class="num">II</span> Based on <i style="text-transform:none;letter-spacing:0;font-family:'EB Garamond',serif;font-weight:400;color:var(--muted)">(edit any)</i></h2>
     <div class="row"><label for="program_end">Program end</label><input type="date" id="program_end"></div>
     <div class="hint" id="program_end_hint"></div>
     <div class="row"><label for="dso_recommended">DSO recommended</label><input type="date" id="dso_recommended"></div>
@@ -57,21 +90,22 @@
   </section>
 
   <section id="plan" hidden>
-    <h2>Your plan</h2>
-    <p class="muted">File the OPT application by</p>
+    <h2><span class="num">III</span> Your plan</h2>
+    <p class="lead">File the OPT application by</p>
     <p class="big" id="latest"></p>
+    <p class="anno" id="anno" aria-hidden="true"></p>
     <p class="rel" id="rel"></p>
     <div class="lines" id="lines"></div>
     <details><summary>Sources</summary><div id="sources"></div></details>
   </section>
 
   <section id="replybox" hidden>
-    <h2>Answer to your question</h2>
+    <h2><span class="num">IV</span> Answer</h2>
     <p id="reply"></p>
   </section>
 
   <p class="notice" id="changed" hidden>The rules changed since your last visit. Your plan below uses the current rules.</p>
-  <p class="muted">Not legal advice; confirm with your DSO. Nothing you enter is stored on our server; your dates stay in this browser.</p>
+  <footer><hr class="rule">Not legal advice; confirm with your DSO. Nothing you enter is stored on our server; your dates stay in this browser.</footer>
 </main>
 <script>
 const $ = id => document.getElementById(id);
@@ -81,6 +115,8 @@ const daysFromToday = iso => { const t = new Date(); t.setHours(0,0,0,0); return
 const store = { get() { try { return JSON.parse(localStorage.getItem("optwise") || "{}"); } catch { return {}; } },
                 set(v) { try { localStorage.setItem("optwise", JSON.stringify(v)); } catch {} } };
 let where = {};
+const roman = n => [[1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],[50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]]
+  .reduce((out, [v, r]) => { while (n >= v) { out += r; n -= v; } return out; }, "");
 
 async function post(path, body) {
   const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
@@ -97,6 +133,8 @@ function renderPlan(p) {
   const s = p.steps[0];
   $("plan").hidden = false;
   $("latest").textContent = fmt(s.latest);
+  const [y, m, d] = s.latest.split("-").map(Number);
+  $("anno").textContent = `${roman(d)} · ${roman(m)} · ${roman(y)}`;
   const toEnd = daysFromToday(s.latest), toStart = daysFromToday(s.earliest);
   const rel = $("rel");
   rel.className = "rel" + (toEnd < 0 ? " bad" : "");
