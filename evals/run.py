@@ -79,7 +79,8 @@ def run_extraction(gold: list[dict]) -> tuple[list, list[str]]:
 def run_narration(gold: list[dict]) -> tuple[list, list[str]]:
     """Narration alone: gold inputs and gold rule ids in, so routing/extraction errors do not leak in."""
     def one(g):
-        inputs = {k: date.fromisoformat(v) for k, v in g["inputs"].items()}
+        # Follow-ups: dates already in the fields (known), replaced by any the question states.
+        inputs = {k: date.fromisoformat(v) for k, v in {**g.get("known", {}), **g["inputs"]}.items()}
         ids = set(g["expected_rule_ids"])
         steps = []
         if "program_end" in inputs and "opt_file_after_end" in ids:
@@ -108,7 +109,7 @@ def run_narration(gold: list[dict]) -> tuple[list, list[str]]:
 
 def main(split: str = "dev") -> int:
     gold = [g for g in map(json.loads, GOLD.read_text().splitlines()) if g["split"] == split]
-    results = [(g, route(g["question"])) for g in gold]
+    results = [(g, route(g["question"], bool(g.get("known")))) for g in gold]
 
     oos = [r.route == "out_of_scope" for g, r in results if g["expected_route"] == "out_of_scope"]
     false_refusal = [r.route == "out_of_scope" for g, r in results if g["expected_route"] != "out_of_scope"]

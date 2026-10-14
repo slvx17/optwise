@@ -25,3 +25,9 @@ def test_limit_degrades_to_plan_without_llm(monkeypatch):
     out = web.ask("When is my OPT deadline?", {"program_end": date(2027, 5, 15), "dso_recommended": None})
     assert out["reply"] is None and "resting" in out["note"]
     assert out["plan"]["steps"][0]["latest"] == "2027-07-14"
+
+
+def test_per_ip_limit_degrades_to_plan(monkeypatch):
+    monkeypatch.setattr(web, "PER_IP", web.PerIP(per_hour=0))
+    out = web.ask("When is my OPT deadline?", {"program_end": date(2027, 5, 15), "dso_recommended": None}, "1.2.3.4")
+    assert out["reply"] is None and "this hour" in out["note"] and out["plan"]["steps"]

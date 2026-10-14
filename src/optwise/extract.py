@@ -24,6 +24,7 @@ DAY_MONTH = re.compile(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+(?:of\s+)?{MONTH}(?:,?
 MONTH_YEAR = re.compile(rf"\b{MONTH}\s+(\d{{4}})\b", re.I)
 SEASON_YEAR = re.compile(r"\b(spring|summer|fall|autumn|winter)\s+(\d{4})\b", re.I)
 # Anything that looks like a date, for the cross-check against the LLM's spans.
+EAD_CONTEXT = re.compile(r"\b(ead|card|stem|expir\w*|employment authorization)\b", re.I)
 ANY_DATE = re.compile("|".join(p.pattern for p in (ISO, NUMERIC, MONTH_DAY, DAY_MONTH, MONTH_YEAR, SEASON_YEAR)), re.I)
 
 
@@ -141,6 +142,8 @@ def extract(question: str, mentions: list[dict]) -> Extraction:
         if not span or span.lower() not in q:
             rejected.append(span)
             continue
+        if role == "ead_expiry" and not EAD_CONTEXT.search(q):
+            role = "other"  # model swapped roles before ("end 2027-12-18" as EAD expiry): ask instead
         inputs.append(Extracted(role if role in ROLES else "other", span, parse_span(span)))
     covered = " ".join(e.span.lower() for e in inputs)
     unlabelled = tuple(m.group(0) for m in ANY_DATE.finditer(question) if m.group(0).lower() not in covered)

@@ -24,7 +24,7 @@ def test_labels_are_well_formed():
 def test_contested_label_matches_engine():
     # Hand labels drift; where the engine can decide, it decides.
     for g in GOLD:
-        inputs = g["inputs"]
+        inputs = {**g.get("known", {}), **g["inputs"]}
         if g["expected_route"] != "deadline" or "program_end" not in inputs or "opt_file_after_end" not in g["expected_rule_ids"]:
             continue
         dso = inputs.get("dso_recommended")

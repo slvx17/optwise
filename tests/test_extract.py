@@ -28,3 +28,10 @@ def test_extract_drops_invented_spans_and_flags_conflicts():
     assert x.rejected == ("2028-01-01",)
     assert "program_end" not in x.exact()  # two different dates for one role: ask, never pick
     assert x.unlabelled == ("2027-04-01",)  # regex saw a date the LLM did not label
+
+
+def test_ead_expiry_label_needs_ead_context():
+    q = "What's my OPT deadline (end 2027-12-18)?"
+    assert "ead_expiry" not in extract(q, [{"role": "ead_expiry", "span": "2027-12-18"}]).exact()
+    q = "My EAD card expires 2028-07-01"
+    assert extract(q, [{"role": "ead_expiry", "span": "2028-07-01"}]).exact() == {"ead_expiry": date(2028, 7, 1)}

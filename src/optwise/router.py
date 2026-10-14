@@ -26,11 +26,18 @@ class Route:
     rule_ids: tuple[str, ...]
 
 
-def route(question: str) -> Route:
+PLAN_RULE_IDS = ("opt_file_before_end", "opt_file_after_end", "opt_file_after_dso_recommendation")
+
+
+def route(question: str, has_dates: bool = False) -> Route:
+    """has_dates: the student already has dates in the fields, so a short follow-up ("and the earliest?")
+    is about the plan on screen even with no OPT keyword in it."""
     q = question.lower()
     asks_date = bool(ASKS_WHEN.search(q)) or bool(DATE.search(q)) and "which date" not in q
     if OUT_OF_SCOPE.search(q) and not asks_date:
         return Route("out_of_scope", ())
+    if has_dates and "stem" not in q:
+        return Route("deadline", tuple(dict.fromkeys(_rule_ids(q, True) + PLAN_RULE_IDS)))
     if not IN_SCOPE.search(q) and not re.search(r"\b(graduat\w*|file|filing|apply|apl?y)\b", q):
         return Route("out_of_scope", ())
     return Route("deadline" if asks_date else "policy", _rule_ids(q, asks_date))

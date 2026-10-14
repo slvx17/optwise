@@ -63,6 +63,24 @@ class Budget:
 
 BUDGET = Budget(float(os.environ.get("OPTWISE_DAILY_USD", 1)), float(os.environ.get("OPTWISE_WEEKLY_USD", 5)))
 ASK_SLOTS = threading.BoundedSemaphore(int(os.environ.get("OPTWISE_MAX_ASKS", 8)))  # LLM asks in flight at once
+class PerIP:
+    """Fixed hourly window per client IP. A speed bump, not a wall: campus NAT shares one IP, and an
+    attacker can rotate IPs, so it is set loose (100/h) and the global Budget is the real ceiling."""
+
+    def __init__(self, per_hour: int):
+        self.per_hour, self.lock, self.hour, self.counts = per_hour, threading.Lock(), None, {}
+
+    def allow(self, ip: str) -> bool:
+        with self.lock:
+            hour = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+            if hour != self.hour:
+                self.hour, self.counts = hour, {}  # dropping the dict each hour also bounds memory
+            self.counts[ip] = self.counts.get(ip, 0) + 1
+            return self.counts[ip] <= self.per_hour
+
+
+PER_IP = PerIP(int(os.environ.get("OPTWISE_ASKS_PER_IP_HOUR", 100)))
+TRUST_PROXY = os.environ.get("OPTWISE_TRUST_PROXY") == "1"  # set only behind a proxy that appends X-Forwarded-For
 RESTING = "Written answers are resting ({why}). Your plan below is computed without them; enter or edit your dates."
 
 
@@ -116,12 +134,14 @@ def _field(role: str, entries: list, exact: dict) -> dict | None:
     return None
 
 
-def ask(question: str, known: dict[str, date]) -> dict:
+def ask(question: str, known: dict[str, date], ip: str = "local") -> dict:
     """known: dates already in the fields; a date in the question replaces them."""
-    r = route(question)
+    r = route(question, any(known.values()))
     if r.route == "out_of_scope":
         return {"route": "out_of_scope", "reply": "optwise only answers post-completion OPT and STEM OPT timing "
                 "questions from 8 CFR 214.2(f). It cannot predict approvals or give legal advice; please ask your DSO."}
+    if not PER_IP.allow(ip):
+        return _plan_only(r.route, known, RESTING.format(why="this connection asked a lot this hour; try again later"))
     if not BUDGET.open():
         return _plan_only(r.route, known, RESTING.format(why="this free demo's daily limit is reached; back tomorrow, UTC"))
     if not ASK_SLOTS.acquire(blocking=False):
@@ -173,6 +193,12 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, code: int, obj: dict) -> None:
         self._send(code, json.dumps(obj).encode())
 
+    def _ip(self) -> str:
+        # Behind a proxy every request comes from the proxy. Its appended entry is the rightmost one;
+        # anything left of it is client-supplied and spoofable.
+        fwd = self.headers.get("X-Forwarded-For") if TRUST_PROXY else None
+        return fwd.split(",")[-1].strip() if fwd else self.client_address[0]
+
     def do_GET(self):
         if self.path in ("/", "/index.html"):
             return self._send(200, PAGE, "text/html; charset=utf-8")
@@ -187,7 +213,7 @@ class Handler(BaseHTTPRequestHandler):
                 q = str(body.get("question", "")).strip()
                 if not q:
                     return self._json(400, {"error": "empty question"})
-                return self._json(200, ask(q[:500], {r: _date(body.get(r)) for r in OPT_ROLES}))
+                return self._json(200, ask(q[:500], {r: _date(body.get(r)) for r in OPT_ROLES}, self._ip()))
             self._json(404, {"error": "not found"})
         except (ValueError, json.JSONDecodeError):
             self._json(400, {"error": "bad input"})
