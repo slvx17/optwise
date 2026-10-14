@@ -31,15 +31,19 @@ OPT_ROLES = ("program_end", "dso_recommended")
 class Budget:
     """Global LLM spend ceilings in real dollars (usage.cost), reset daily and weekly, UTC (DESIGN #14).
 
-    ponytail: in memory, one instance; a restart resets the counters. The OpenRouter key's monthly
-    limit is the hard floor under that. Move to a shared store if we run more than one instance.
+    Free hosts restart the process (sleep, scale to zero), which would zero in-memory counters and let
+    the daily cap leak. So every SYNC_S seconds we take the max of our count and OpenRouter's own
+    usage_daily / usage_weekly for the key, which survive restarts. Use a production-only key, or eval
+    runs count against the app's allowance. The key's monthly limit at OpenRouter is the hard floor.
     """
+    SYNC_S = 60
 
     def __init__(self, daily_usd: float, weekly_usd: float):
         self.daily, self.weekly = daily_usd, weekly_usd
         self.lock = threading.Lock()
         self.day = self.week = None
         self.spent_day = self.spent_week = 0.0
+        self.synced = 0.0
 
     def _roll(self) -> None:
         today = datetime.now(timezone.utc).date()
@@ -50,9 +54,24 @@ class Budget:
 
     def open(self) -> bool:
         # ponytail: check-then-spend, so parallel asks can overshoot by at most MAX_ASKS calls (~$0.003).
+        self._sync()
         with self.lock:
             self._roll()
             return self.spent_day < self.daily and self.spent_week < self.weekly
+
+    def _sync(self) -> None:
+        now = datetime.now(timezone.utc).timestamp()
+        if now - self.synced < self.SYNC_S:
+            return
+        self.synced = now
+        try:
+            u = llm.key_usage()
+        except Exception:  # provider unreachable: keep our own count; the LLM call would fail anyway
+            return
+        with self.lock:
+            self._roll()
+            self.spent_day = max(self.spent_day, float(u.get("usage_daily") or 0))
+            self.spent_week = max(self.spent_week, float(u.get("usage_weekly") or 0))
 
     def add(self, usd: float) -> None:
         with self.lock:

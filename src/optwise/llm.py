@@ -65,3 +65,10 @@ def chat_json(model_list: list[str], system: str, user: str, schema: dict,
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, TypeError, KeyError, IndexError) as e:
                 errors.append(f"{model}: {type(e).__name__}")
     raise LLMUnavailable("; ".join(errors))
+
+
+def key_usage() -> dict:
+    """OpenRouter's own spend counters for this key (usage_daily, usage_weekly, ...). They survive our restarts."""
+    req = urllib.request.Request("https://openrouter.ai/api/v1/key", headers={"Authorization": f"Bearer {api_key()}"})
+    with urllib.request.urlopen(req, timeout=5) as r:
+        return json.load(r)["data"]

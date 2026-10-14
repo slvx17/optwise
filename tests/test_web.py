@@ -1,6 +1,13 @@
 from datetime import date
 
+import pytest
+
 from optwise import web
+
+
+@pytest.fixture(autouse=True)
+def no_provider_sync(monkeypatch):
+    monkeypatch.setattr(web.llm, "key_usage", lambda: {})
 
 
 def test_budget_closes_at_ceiling_and_reopens_next_day():
@@ -38,3 +45,9 @@ def test_suggestions_follow_plan_state():
     s = web.plan_json(date(2027, 5, 15), None)["suggestions"]
     assert s[0] == "What if my DSO recommends on Apr 15, 2027?" and "court order" in s[1]
     assert web.plan_json(date(2027, 5, 15), date(2027, 4, 20))["suggestions"][0] == "Why is my deadline May 20, 2027?"
+
+
+def test_provider_usage_survives_restart(monkeypatch):
+    monkeypatch.setattr(web.llm, "key_usage", lambda: {"usage_daily": 0.02, "usage_weekly": 0.02})
+    b = web.Budget(daily_usd=0.01, weekly_usd=1)  # a fresh process: local count is zero
+    assert not b.open()

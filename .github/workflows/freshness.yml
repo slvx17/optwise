@@ -1,0 +1,16 @@
+name: freshness
+# Weekly check of 8 CFR 214.2 on eCFR (DESIGN #7). A failing run is the review signal: GitHub emails
+# the owner, who reviews the diff and edits rules by PR. The check never edits a rule.
+on:
+  schedule:
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+jobs:
+  ecfr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python evals/freshness.py

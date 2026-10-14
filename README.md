@@ -50,7 +50,8 @@ Design decisions and the reasoning behind them: [docs/DESIGN.md](docs/DESIGN.md)
 - [ ] Retrieval over pinned 8 CFR 214.2(f) paragraphs for policy questions (keyword first, recall@k on the gold set)
 - [x] Web app: free-text ask box, editable date fields, plan from code (no LLM), validated reply
 - [x] Public demo guards: daily and weekly spend ceilings in dollars, 8 asks in flight, input cap, key server-side; limits degrade to plan-only
-- [ ] Deploy (free tier) and freshness check for new eCFR versions
+- [x] Freshness check for new eCFR versions (weekly CI, `python evals/freshness.py`)
+- [ ] Deploy (free tier)
 - [ ] Results write-up: metrics per stage, cost per run, what failed
 
 ## Development
